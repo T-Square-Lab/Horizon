@@ -12,7 +12,8 @@
   <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/T-Square-Lab/Horizon/main/logo-horizon.png">
   <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/T-Square-Lab/Horizon/main/logo-horizon.png">
   
-  <link rel="manifest" id="pwa-manifest">
+  <!-- Manifest local pour la PWA -->
+  <link rel="manifest" href="manifest.json">
 
   <!-- Font Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -603,46 +604,12 @@
   </div>
 
   <script>
-    const swContent = `
-      const CACHE_NAME = 'horizon-pwa-v34';
-      const URLS_TO_CACHE = [
-        './',
-        'index.html',
-        'https://raw.githubusercontent.com/T-Square-Lab/Horizon/main/logo-horizon.png',
-        'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
-        'https://cdn.jsdelivr.net/npm/chart.js'
-      ];
-      self.addEventListener('install', e => {
-        e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(URLS_TO_CACHE)).then(() => self.skipWaiting()));
-      });
-      self.addEventListener('activate', e => {
-        e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => k !== CACHE_NAME && caches.delete(k)))).then(() => self.clients.claim()));
-      });
-      self.addEventListener('fetch', e => {
-        e.respondWith(caches.match(e.request).then(res => res || fetch(e.request)));
-      });
-    `;
-
+    // Enregistrement du Service Worker externe
     if ('serviceWorker' in navigator) {
-      const blob = new Blob([swContent], { type: 'application/javascript' });
-      const swUrl = URL.createObjectURL(blob);
-      navigator.serviceWorker.register(swUrl).catch(() => {});
+      navigator.serviceWorker.register('./service-worker.js')
+        .then(() => console.log('Service Worker enregistré avec succès.'))
+        .catch((err) => console.error('Erreur lors de l\'enregistrement du SW:', err));
     }
-
-    const manifestObj = {
-      "name": "Horizon - Simulateur d'Investissement",
-      "short_name": "Horizon",
-      "start_url": ".",
-      "display": "standalone",
-      "background_color": "#090B0E",
-      "theme_color": "#090B0E",
-      "icons": [{
-        "src": "https://raw.githubusercontent.com/T-Square-Lab/Horizon/main/logo-horizon.png",
-        "sizes": "512x512",
-        "type": "image/png"
-      }]
-    };
-    document.getElementById("pwa-manifest").setAttribute("href", "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(manifestObj)));
 
     // CONSTANTES FISCALES ET PLAFONDS
     const INFLATION = 1.6;
