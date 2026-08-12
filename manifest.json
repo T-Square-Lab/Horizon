@@ -1,0 +1,15 @@
+{
+  "short_name": "Horizon",
+  "name": "Horizon - Simulateur d'Investissement",
+  "icons": [
+    {
+      "src": "logo-horizon.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/Horizon/",
+  "background_color": "#090B0E",
+  "theme_color": "#090B0E",
+  "display": "standalone"
+}
