@@ -76,7 +76,6 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      /* Ajustement exact des marges de sécurité iOS pour supprimer le vide haut/bas */
       padding: env(safe-area-inset-top, 8px) 12px env(safe-area-inset-bottom, 8px) 12px;
       gap: 6px;
       position: relative;
@@ -143,7 +142,7 @@
       background: rgba(0, 0, 0, 0.4); 
       padding: 2px; 
       gap: 2px; 
-      height: 26px;
+      height: 27px;
       width: 100%; 
     }
     .env-segmented-control button { 
@@ -158,7 +157,7 @@
       font-family: inherit; 
       transition: all 0.2s ease; 
       padding: 0;
-      line-height: 22px;
+      line-height: 23px;
     }
     .env-segmented-control button.active { 
       background: linear-gradient(180deg, rgba(53, 176, 134, 0.25) 0%, rgba(53, 176, 134, 0.1) 100%); 
@@ -222,7 +221,7 @@
       display: flex;
     }
 
-    /* Chart Card flexible pour combler tout l'espace disponible */
+    /* Chart Card : prend l'espace disponible agrandi */
     .chart-card { 
       background: var(--card-bg-gradient); 
       border: var(--border-luminous); 
@@ -231,7 +230,7 @@
       display: flex; 
       flex-direction: column; 
       flex: 1; 
-      min-height: 120px; 
+      min-height: 140px;
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
     .chart-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; padding: 0 4px; }
@@ -243,30 +242,31 @@
 
     .chart-container { position: relative; flex: 1; width: 100%; height: 100%; min-height: 0; }
 
-    /* Controls Container */
+    /* Controls Container : Padding bas supprimé au strict minimum */
     .controls { 
-      flex-shrink: 0; 
+      flex-shrink: 0;
       background: var(--card-bg-gradient); 
       border: var(--border-luminous); 
       border-radius: 14px; 
-      padding: 8px 10px; 
+      padding: 10px 12px 6px 12px; 
       display: flex; 
       flex-direction: column; 
-      gap: 6px; 
+      justify-content: flex-start;
+      gap: 12px; 
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
-    .slider-field { display: flex; flex-direction: column; gap: 1px; }
+    .slider-field { display: flex; flex-direction: column; gap: 3px; }
     .slider-top { display: flex; align-items: center; justify-content: space-between; }
     .slider-label { font-size: 9px; color: var(--text-muted); font-weight: 500; }
     
-    .preset-sublabel { font-size: 7.5px; color: var(--text-dim); font-weight: 400; margin-top: 3px; margin-bottom: 1px; }
+    .preset-sublabel { font-size: 7.5px; color: var(--text-dim); font-weight: 400; margin-top: 4px; margin-bottom: 2px; }
     
     .slider-value { 
       font-size: 10px; 
       font-weight: 600; 
       color: var(--text-white); 
       cursor: pointer; 
-      padding: 0px 4px;
+      padding: 1px 4px;
       border-radius: 3px;
       background: rgba(255, 255, 255, 0.03);
       border: var(--border-subtle);
@@ -310,7 +310,7 @@
     .slider::-moz-range-thumb:active { transform: scale(1.2); }
 
     /* Presets Pills */
-    .presets { display: flex; gap: 3px; margin-top: 1px; flex-wrap: wrap; }
+    .presets { display: flex; gap: 3px; margin-top: 3px; flex-wrap: wrap; }
     .preset-pill { 
       flex: 1; 
       min-width: 44px;
