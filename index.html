@@ -200,7 +200,7 @@
     .stat-sub-large { font-size: clamp(9.5px, 2.8vw, 11.5px); color: var(--accent-blue); font-weight: 600; }
     .stat-gain-net { font-size: clamp(9.5px, 2.8vw, 11.5px); color: var(--accent-green); font-weight: 700; margin-top: 1px; }
 
-    /* Alert Badge : Animation d'apparition ultra fluide (smooth) */
+    /* Alert Badge */
     .alert-badge {
       max-height: 0;
       opacity: 0;
@@ -536,13 +536,13 @@
         <input type="range" class="slider" id="slider-cotisation" min="0" max="100" step="0.1" value="10" oninput="updateState()">
       </div>
 
-      <!-- Taux de performance -->
+      <!-- Taux de performance (90% du curseur = 0% à 15%) -->
       <div class="slider-field">
         <div class="slider-top">
           <span class="slider-label">Taux de performance</span>
           <span class="slider-value num" id="label-taux" onclick="editManual('tauxAnnuel')">7,0 %</span>
         </div>
-        <input type="range" class="slider" id="slider-taux" min="0" max="35" step="0.1" value="7.0" oninput="updateState()">
+        <input type="range" class="slider" id="slider-taux" min="0" max="100" step="0.1" value="42" oninput="updateState()">
         <span class="preset-sublabel">Presets de rendement historique</span>
         <div class="presets">
           <button class="preset-pill" id="preset-monetaire" onclick="setPreset(2.0)">Monétaire</button>
@@ -563,13 +563,13 @@
         <input type="range" class="slider" id="slider-frais" min="0" max="2" step="0.05" value="0.30" oninput="updateState()">
       </div>
 
-      <!-- Durée -->
+      <!-- Durée (50% du curseur = 1 à 20 ans) -->
       <div class="slider-field">
         <div class="slider-top">
           <span class="slider-label">Durée</span>
           <span class="slider-value num" id="label-annees" onclick="editManual('annees')">25 ans</span>
         </div>
-        <input type="range" class="slider" id="slider-annees" min="1" max="100" step="1" value="25" oninput="updateState()">
+        <input type="range" class="slider" id="slider-annees" min="0" max="100" step="0.1" value="53.1" oninput="updateState()">
       </div>
     </div>
 
@@ -644,12 +644,14 @@
       "CTO": 0.30
     };
 
+    /* FONCTIONS DE PROGRESSION NON LINÉAIRE DES CURSEURS */
+    
+    // Capital
     function sliderToCapital(pos) {
       if (pos <= 50) return Math.round((pos / 50) * 20000 / 100) * 100;
       if (pos <= 80) return Math.round((20000 + ((pos - 50) / 30) * 130000) / 500) * 500;
       return Math.round((150000 + ((pos - 80) / 20) * 850000) / 5000) * 5000;
     }
-
     function capitalToSlider(val) {
       val = Math.max(0, Math.min(1000000, val));
       if (val <= 20000) return (val / 20000) * 50;
@@ -657,17 +659,39 @@
       return 80 + ((val - 150000) / 850000) * 20;
     }
 
+    // Cotisation
     function sliderToCotisation(pos) {
       if (pos <= 50) return Math.round((pos / 50) * 1000 / 10) * 10;
       if (pos <= 80) return Math.round((1000 + ((pos - 50) / 30) * 4000) / 50) * 50;
       return Math.round((5000 + ((pos - 80) / 20) * 15000) / 250) * 250;
     }
-
     function cotisationToSlider(val) {
       val = Math.max(0, Math.min(20000, val));
       if (val <= 1000) return (val / 1000) * 50;
       if (val <= 5000) return 50 + ((val - 1000) / 4000) * 30;
       return 80 + ((val - 5000) / 15000) * 20;
+    }
+
+    // Taux de performance (90% du curseur = 0% à 15%)
+    function sliderToTaux(pos) {
+      if (pos <= 90) return Math.round(((pos / 90) * 15) * 10) / 10;
+      return Math.round((15 + ((pos - 90) / 10) * 20) * 10) / 10;
+    }
+    function tauxToSlider(val) {
+      val = Math.max(0, Math.min(35, val));
+      if (val <= 15) return (val / 15) * 90;
+      return 90 + ((val - 15) / 20) * 10;
+    }
+
+    // Durée (50% du curseur = 1 à 20 ans, puis monte à 100 ans)
+    function sliderToAnnees(pos) {
+      if (pos <= 50) return Math.max(1, Math.round(1 + (pos / 50) * 19));
+      return Math.round(20 + ((pos - 50) / 50) * 80);
+    }
+    function anneesToSlider(val) {
+      val = Math.max(1, Math.min(100, val));
+      if (val <= 20) return ((val - 1) / 19) * 50;
+      return 50 + ((val - 20) / 80) * 50;
     }
 
     let state = { capitalInitial: 10000, cotisationMensuelle: 200, tauxAnnuel: 7.0, fraisETF: 0.30, annees: 25, enveloppe: "PEA", vueReelle: false };
@@ -782,12 +806,14 @@
     function updateState() {
       const posCapital = parseFloat(document.getElementById("slider-capital-initial").value);
       const posCotisation = parseFloat(document.getElementById("slider-cotisation").value);
+      const posTaux = parseFloat(document.getElementById("slider-taux").value);
+      const posAnnees = parseFloat(document.getElementById("slider-annees").value);
 
       state.capitalInitial = sliderToCapital(posCapital);
       state.cotisationMensuelle = sliderToCotisation(posCotisation);
-      state.tauxAnnuel = parseFloat(document.getElementById("slider-taux").value);
+      state.tauxAnnuel = sliderToTaux(posTaux);
       state.fraisETF = parseFloat(document.getElementById("slider-frais").value);
-      state.annees = parseInt(document.getElementById("slider-annees").value);
+      state.annees = sliderToAnnees(posAnnees);
 
       document.getElementById("label-capital-initial").innerText = formatEUR(state.capitalInitial);
       document.getElementById("label-cotisation").innerText = formatEUR(state.cotisationMensuelle);
@@ -819,9 +845,9 @@
         let parsed = parseFloat(input);
         if (key === "capitalInitial") document.getElementById("slider-capital-initial").value = capitalToSlider(parsed);
         else if (key === "cotisationMensuelle") document.getElementById("slider-cotisation").value = cotisationToSlider(parsed);
-        else if (key === "tauxAnnuel") document.getElementById("slider-taux").value = Math.max(0, Math.min(35, parsed));
+        else if (key === "tauxAnnuel") document.getElementById("slider-taux").value = tauxToSlider(parsed);
         else if (key === "fraisETF") document.getElementById("slider-frais").value = Math.max(0, Math.min(2, parsed));
-        else if (key === "annees") document.getElementById("slider-annees").value = Math.max(1, Math.min(100, Math.round(parsed)));
+        else if (key === "annees") document.getElementById("slider-annees").value = anneesToSlider(parsed);
         updateState();
       }
     }
@@ -854,7 +880,7 @@
     }
 
     function setPreset(val) {
-      document.getElementById("slider-taux").value = val;
+      document.getElementById("slider-taux").value = tauxToSlider(val);
       updateState();
     }
 
