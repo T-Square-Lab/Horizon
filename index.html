@@ -112,12 +112,17 @@
       font-size: 9px; 
       color: var(--text-muted); 
       font-weight: 500; 
+      user-select: none;
+    }
+    .infl-tag {
       cursor: pointer;
+      color: var(--text-muted);
       text-decoration: underline;
       text-decoration-style: dotted;
       text-underline-offset: 2px;
+      transition: color 0.15s ease;
     }
-    .infl-label:hover { color: var(--text-white); }
+    .infl-tag:hover { color: var(--text-white); }
     
     .switch { 
       width: 26px; 
@@ -476,7 +481,7 @@
         </div>
         <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
           <div class="infl-row" style="margin-bottom: 3px;">
-            <span class="infl-label" id="label-inflation-switch" onclick="editManual('inflation')" title="Cliquer pour modifier le taux">Ajusté inflation (+ 1,6 %)</span>
+            <span class="infl-label">Ajusté inflation <span class="infl-tag" id="tag-inflation" onclick="editManual('inflation')" title="Cliquer pour modifier le taux">(+ 1,6 %)</span></span>
             <button id="switch-inflation" class="switch" onclick="toggleInflation()"></button>
           </div>
           <div class="stat-sub-large num" id="val-capital-net">net d'impôt 0 €</div>
@@ -611,8 +616,11 @@
         </div>
 
         <div>
-          <div class="details-section-title">📈 Inflation & Période de référence</div>
-          <p>Le taux par défaut de <b>+1,6 %</b> correspond à l'inflation annuelle moyenne constatée en France par l'Insee sur le long terme (hors pics conjoncturels). Vous pouvez cliquer directement sur le pourcentage d'inflation pour personnaliser cette valeur.</p>
+          <div class="details-section-title">📈 Inflation & Méthode de calcul</div>
+          <p>Le taux par défaut de <b>+1,6 %</b> correspond à l'inflation annuelle moyenne constatée en France par l'Insee sur le long terme.</p>
+          <p><b>Formule d'actualisation en euros constants :</b></p>
+          <p style="font-family: monospace; background: rgba(255,255,255,0.04); padding: 4px 6px; border-radius: 4px; margin-top: 2px;">Valeur réelle = Valeur nominale / (1 + Taux_inflation)^Années</p>
+          <p style="margin-top: 2px;">Tous les montants projetés (capital brut, net et rente) sont ainsi déflatés pour refléter votre pouvoir d'achat réel équivalent à celui d'aujourd'hui.</p>
         </div>
 
         <div>
@@ -756,7 +764,7 @@
       let capitalSansFrais = capitalInitial;
       let peaOverflowYear = null;
 
-      const points = [{ annee: 0, capital: capitalInitial, verse: verseTotal, reel: capitalInitial, plusValue: 0, frais: 0 }];
+      const points = [{ annee: 0, capital: capitalInitial, verse: verseTotal, reel: capitalInitial, plusValue: 0, frais: 0, capitalSansFrais: capitalInitial }];
 
       for (let mois = 1; mois <= annees * 12; mois++) {
         capitalBrutAccumule = capitalBrutAccumule * (1 + tauxMensuelNet) + cotisationMensuelle;
@@ -773,7 +781,7 @@
           const reel = currentCapital / Math.pow(1 + inflation / 100, annee);
           const plusValue = Math.max(currentCapital - verseTotal, 0);
           const frais = Math.max(capitalSansFrais - currentCapital, 0);
-          points.push({ annee, capital: currentCapital, verse: verseTotal, reel, plusValue, frais });
+          points.push({ annee, capital: currentCapital, verse: verseTotal, reel, plusValue, frais, capitalSansFrais });
         }
       }
 
@@ -846,7 +854,7 @@
       document.getElementById("label-taux").innerText = formatPercent(state.tauxAnnuel);
       document.getElementById("label-frais").innerText = state.fraisETF.toFixed(2).replace(".", ",") + " %";
       document.getElementById("label-annees").innerText = `${state.annees} ans`;
-      document.getElementById("label-inflation-switch").innerText = `Ajusté inflation (+ ${state.inflation.toFixed(1).replace(".", ",")} %)`;
+      document.getElementById("tag-inflation").innerText = `(+ ${state.inflation.toFixed(1).replace(".", ",")} %)`;
 
       document.querySelectorAll(".slider").forEach(updateSliderBackground);
 
@@ -896,7 +904,7 @@
         document.getElementById("label-taux").innerText = formatPercent(state.tauxAnnuel);
         document.getElementById("label-frais").innerText = state.fraisETF.toFixed(2).replace(".", ",") + " %";
         document.getElementById("label-annees").innerText = `${state.annees} ans`;
-        document.getElementById("label-inflation-switch").innerText = `Ajusté inflation (+ ${state.inflation.toFixed(1).replace(".", ",")} %)`;
+        document.getElementById("tag-inflation").innerText = `(+ ${state.inflation.toFixed(1).replace(".", ",")} %)`;
 
         document.querySelectorAll(".slider").forEach(updateSliderBackground);
         render();
@@ -949,20 +957,10 @@
       gradGreen.addColorStop(1, 'rgba(53, 176, 134, 0.05)');
 
       const gradOrange = ctx.createLinearGradient(0, 0, 0, 160);
-      gradOrange.addColorStop(0, 'rgba(245, 158, 11, 0.40)');
-      gradOrange.addColorStop(1, 'rgba(245, 158, 11, 0.03)');
+      gradOrange.addColorStop(0, 'rgba(245, 158, 11, 0.45)');
+      gradOrange.addColorStop(1, 'rgba(245, 158, 11, 0.10)');
 
       const datasets = [
-        { 
-          label: "Frais", 
-          data: points.map(p => p.frais), 
-          backgroundColor: gradOrange, 
-          borderColor: "#F59E0B", 
-          borderWidth: 1.5, 
-          fill: true, 
-          pointRadius: 0, 
-          tension: 0.35 
-        },
         { 
           label: "Versé", 
           data: points.map(p => p.verse), 
@@ -975,11 +973,21 @@
         },
         { 
           label: "Plus-value", 
-          data: points.map(p => p.plusValue), 
+          data: points.map(p => p.capital), 
           backgroundColor: gradGreen, 
           borderColor: "#35b086", 
           borderWidth: 1.8, 
           fill: true, 
+          pointRadius: 0, 
+          tension: 0.35 
+        },
+        { 
+          label: "Frais", 
+          data: points.map(p => p.capitalSansFrais), 
+          backgroundColor: gradOrange, 
+          borderColor: "#F59E0B", 
+          borderWidth: 1.8, 
+          fill: '-1', // Remplissage vers la courbe verte
           pointRadius: 0, 
           tension: 0.35 
         }
@@ -1013,13 +1021,23 @@
                 bodyFont: { family: 'Inter', size: 9 },
                 callbacks: { 
                   title: (items) => `Année ${items[0].dataIndex}`, 
-                  label: (context) => ` ${context.dataset.label}: ${formatEUR(context.raw)}` 
+                  label: (context) => {
+                    let val = 0;
+                    if (context.dataset.label === "Versé") {
+                      val = points[context.dataIndex].verse;
+                    } else if (context.dataset.label === "Plus-value") {
+                      val = points[context.dataIndex].plusValue;
+                    } else if (context.dataset.label === "Frais") {
+                      val = points[context.dataIndex].frais;
+                    }
+                    return ` ${context.dataset.label}: ${formatEUR(val)}`;
+                  }
                 }
               }
             },
             scales: {
-              x: { stacked: true, grid: { display: false }, ticks: { font: { family: 'Inter', size: 8 }, color: "#64748B", maxRotation: 0 } },
-              y: { stacked: true, grid: { color: "rgba(255, 255, 255, 0.03)" }, ticks: { font: { family: 'Inter', size: 8 }, color: "#64748B", callback: (val) => formatCompact(val) } }
+              x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 8 }, color: "#64748B", maxRotation: 0 } },
+              y: { grid: { color: "rgba(255, 255, 255, 0.03)" }, ticks: { font: { family: 'Inter', size: 8 }, color: "#64748B", callback: (val) => formatCompact(val) } }
             }
           }
         });
