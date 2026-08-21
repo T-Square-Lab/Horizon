@@ -1,4 +1,4 @@
-const CACHE_NAME = 'horizon-cache-v1';
+const CACHE_NAME = 'horizon-cache-v2';
 const ASSETS_TO_CACHE = [
   '/Horizon/',
   '/Horizon/index.html',
