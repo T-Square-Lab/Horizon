@@ -108,7 +108,17 @@
 
     /* Inflation / Switch */
     .infl-row { display: flex; align-items: center; gap: 6px; }
-    .infl-label { font-size: 9px; color: var(--text-muted); font-weight: 500; }
+    .infl-label { 
+      font-size: 9px; 
+      color: var(--text-muted); 
+      font-weight: 500; 
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-style: dotted;
+      text-underline-offset: 2px;
+    }
+    .infl-label:hover { color: var(--text-white); }
+    
     .switch { 
       width: 26px; 
       height: 15px; 
@@ -435,7 +445,7 @@
       color: var(--text-muted);
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
     }
 
     .details-section-title {
@@ -466,7 +476,7 @@
         </div>
         <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
           <div class="infl-row" style="margin-bottom: 3px;">
-            <span class="infl-label">Ajusté inflation (+ 1,6 %)</span>
+            <span class="infl-label" id="label-inflation-switch" onclick="editManual('inflation')" title="Cliquer pour modifier le taux">Ajusté inflation (+ 1,6 %)</span>
             <button id="switch-inflation" class="switch" onclick="toggleInflation()"></button>
           </div>
           <div class="stat-sub-large num" id="val-capital-net">net d'impôt 0 €</div>
@@ -601,13 +611,25 @@
         </div>
 
         <div>
-          <div class="details-section-title">💵 Rente Mensuelle Nette</div>
-          <p>La <b>rente mensuelle</b> représente le montant net d'impôt généré par les intérêts de votre capital final réinvesti au taux net indiqué.</p>
+          <div class="details-section-title">📈 Inflation & Période de référence</div>
+          <p>Le taux par défaut de <b>+1,6 %</b> correspond à l'inflation annuelle moyenne constatée en France par l'Insee sur le long terme (hors pics conjoncturels). Vous pouvez cliquer directement sur le pourcentage d'inflation pour personnaliser cette valeur.</p>
         </div>
 
         <div>
-          <div class="details-section-title">📈 Inflation (+1,6 %)</div>
-          <p>Lorsque l'option est activée, tous les montants futurs sont actualisés en <i>euros constants</i> pour refléter votre pouvoir d'achat réel.</p>
+          <div class="details-section-title">🏛️ Rendements historiques des indices</div>
+          <p>Les taux proposés dans les presets reflètent les performances annualisées moyennes brutes de long terme (dividendes réinvestis) observées depuis 1980 / créations d'indices :</p>
+          <ul style="padding-left: 14px; margin-top: 2px;">
+            <li><b>Monétaire (2,0 %) :</b> Taux sans risque moyen de la zone euro.</li>
+            <li><b>Fonds Euro (3,0 %) :</b> Moyenne des supports garantis en assurance-vie.</li>
+            <li><b>MSCI ACWI (8,3 %) & MSCI World (8,5 %) :</b> Marchés actions mondiaux diversifiés.</li>
+            <li><b>S&P 500 (11,0 %) :</b> Les 500 plus grandes entreprises américaines.</li>
+            <li><b>Nasdaq 100 (13,8 %) :</b> Les 100 leaders technologiques et de croissance américains.</li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="details-section-title">💵 Rente Mensuelle Nette</div>
+          <p>La <b>rente mensuelle</b> représente le montant net d'impôt généré par les intérêts de votre capital final réinvesti au taux net indiqué.</p>
         </div>
       </div>
     </div>
@@ -622,7 +644,6 @@
     }
 
     // CONSTANTES FISCALES ET PLAFONDS
-    const INFLATION = 1.6;
     const PEA_LIMIT = 150000;
     const PLAFOND_LIVRET_REGLEMENTE = 34950;
     const TAUX_PFU = 0.314; // Flat Tax 31,4 %
@@ -645,8 +666,6 @@
     };
 
     /* FONCTIONS DE PROGRESSION NON LINÉAIRE DES CURSEURS */
-    
-    // Capital
     function sliderToCapital(pos) {
       if (pos <= 50) return Math.round((pos / 50) * 20000 / 100) * 100;
       if (pos <= 80) return Math.round((20000 + ((pos - 50) / 30) * 130000) / 500) * 500;
@@ -659,7 +678,6 @@
       return 80 + ((val - 150000) / 850000) * 20;
     }
 
-    // Cotisation
     function sliderToCotisation(pos) {
       if (pos <= 50) return Math.round((pos / 50) * 1000 / 10) * 10;
       if (pos <= 80) return Math.round((1000 + ((pos - 50) / 30) * 4000) / 50) * 50;
@@ -672,7 +690,6 @@
       return 80 + ((val - 5000) / 15000) * 20;
     }
 
-    // Taux de performance (90% du curseur = 0% à 15%)
     function sliderToTaux(pos) {
       if (pos <= 90) return Math.round(((pos / 90) * 15) * 10) / 10;
       return Math.round((15 + ((pos - 90) / 10) * 20) * 10) / 10;
@@ -683,7 +700,6 @@
       return 90 + ((val - 15) / 20) * 10;
     }
 
-    // Durée (50% du curseur = 1 à 20 ans, puis monte à 100 ans)
     function sliderToAnnees(pos) {
       if (pos <= 50) return Math.max(1, Math.round(1 + (pos / 50) * 19));
       return Math.round(20 + ((pos - 50) / 50) * 80);
@@ -694,7 +710,17 @@
       return 50 + ((val - 20) / 80) * 50;
     }
 
-    let state = { capitalInitial: 10000, cotisationMensuelle: 200, tauxAnnuel: 7.0, fraisETF: 0.30, annees: 25, enveloppe: "PEA", vueReelle: false };
+    let state = { 
+      capitalInitial: 10000, 
+      cotisationMensuelle: 200, 
+      tauxAnnuel: 7.0, 
+      fraisETF: 0.30, 
+      annees: 25, 
+      inflation: 1.6,
+      enveloppe: "PEA", 
+      vueReelle: false 
+    };
+    
     let chartInstance = null;
 
     function formatEUR(n) {
@@ -719,7 +745,7 @@
     }
 
     function computeSeries(params) {
-      const { capitalInitial, cotisationMensuelle, tauxAnnuel, fraisETF, annees, enveloppe, vueReelle } = params;
+      const { capitalInitial, cotisationMensuelle, tauxAnnuel, fraisETF, annees, inflation, enveloppe, vueReelle } = params;
       
       const tauxNet = Math.max(tauxAnnuel - fraisETF, -99);
       const tauxMensuelNet = Math.pow(1 + tauxNet / 100, 1 / 12) - 1;
@@ -744,7 +770,7 @@
         if (mois % 12 === 0) {
           const annee = mois / 12;
           const currentCapital = capitalBrutAccumule;
-          const reel = currentCapital / Math.pow(1 + INFLATION / 100, annee);
+          const reel = currentCapital / Math.pow(1 + inflation / 100, annee);
           const plusValue = Math.max(currentCapital - verseTotal, 0);
           const frais = Math.max(capitalSansFrais - currentCapital, 0);
           points.push({ annee, capital: currentCapital, verse: verseTotal, reel, plusValue, frais });
@@ -779,7 +805,7 @@
       let gainMensuelNet = gainAnnuelNet / 12;
 
       if (vueReelle) {
-        const factor = Math.pow(1 + INFLATION / 100, annees);
+        const factor = Math.pow(1 + inflation / 100, annees);
         capitalFinalBrut /= factor;
         capitalFinalNet /= factor;
         gainMensuelNet /= factor;
@@ -820,12 +846,13 @@
       document.getElementById("label-taux").innerText = formatPercent(state.tauxAnnuel);
       document.getElementById("label-frais").innerText = state.fraisETF.toFixed(2).replace(".", ",") + " %";
       document.getElementById("label-annees").innerText = `${state.annees} ans`;
+      document.getElementById("label-inflation-switch").innerText = `Ajusté inflation (+ ${state.inflation.toFixed(1).replace(".", ",")} %)`;
 
       document.querySelectorAll(".slider").forEach(updateSliderBackground);
 
       const presetButtons = document.querySelectorAll(".preset-pill");
       presetButtons.forEach((btn, idx) => {
-        if (PRESETS[idx] && PRESETS[idx].value === state.tauxAnnuel) btn.classList.add("active");
+        if (PRESETS[idx] && Math.abs(PRESETS[idx].value - state.tauxAnnuel) < 0.05) btn.classList.add("active");
         else btn.classList.remove("active");
       });
 
@@ -836,19 +863,43 @@
       let promptMsg = "";
       if (key === "capitalInitial") promptMsg = "Entrez le capital de départ (€) :";
       else if (key === "cotisationMensuelle") promptMsg = "Entrez la cotisation mensuelle (€) :";
-      else if (key === "tauxAnnuel") promptMsg = "Entrez le taux de performance annuel (max 35%) :";
+      else if (key === "tauxAnnuel") promptMsg = "Entrez le taux de performance annuel (%) :";
       else if (key === "fraisETF") promptMsg = "Entrez les frais annuels (%) :";
       else if (key === "annees") promptMsg = "Entrez la durée (années) :";
+      else if (key === "inflation") promptMsg = "Entrez le taux d'inflation annuel (%) :";
 
       const input = prompt(promptMsg, state[key]);
-      if (input !== null && !isNaN(parseFloat(input))) {
-        let parsed = parseFloat(input);
-        if (key === "capitalInitial") document.getElementById("slider-capital-initial").value = capitalToSlider(parsed);
-        else if (key === "cotisationMensuelle") document.getElementById("slider-cotisation").value = cotisationToSlider(parsed);
-        else if (key === "tauxAnnuel") document.getElementById("slider-taux").value = tauxToSlider(parsed);
-        else if (key === "fraisETF") document.getElementById("slider-frais").value = Math.max(0, Math.min(2, parsed));
-        else if (key === "annees") document.getElementById("slider-annees").value = anneesToSlider(parsed);
-        updateState();
+      if (input !== null && !isNaN(parseFloat(input.replace(",", ".")))) {
+        let parsed = parseFloat(input.replace(",", "."));
+        
+        if (key === "capitalInitial") {
+          state.capitalInitial = Math.max(0, parsed);
+          document.getElementById("slider-capital-initial").value = capitalToSlider(state.capitalInitial);
+        } else if (key === "cotisationMensuelle") {
+          state.cotisationMensuelle = Math.max(0, parsed);
+          document.getElementById("slider-cotisation").value = cotisationToSlider(state.cotisationMensuelle);
+        } else if (key === "tauxAnnuel") {
+          state.tauxAnnuel = Math.max(0, parsed);
+          document.getElementById("slider-taux").value = tauxToSlider(state.tauxAnnuel);
+        } else if (key === "fraisETF") {
+          state.fraisETF = Math.max(0, parsed);
+          document.getElementById("slider-frais").value = Math.min(2, state.fraisETF);
+        } else if (key === "annees") {
+          state.annees = Math.max(1, Math.round(parsed));
+          document.getElementById("slider-annees").value = anneesToSlider(state.annees);
+        } else if (key === "inflation") {
+          state.inflation = Math.max(0, parsed);
+        }
+        
+        document.getElementById("label-capital-initial").innerText = formatEUR(state.capitalInitial);
+        document.getElementById("label-cotisation").innerText = formatEUR(state.cotisationMensuelle);
+        document.getElementById("label-taux").innerText = formatPercent(state.tauxAnnuel);
+        document.getElementById("label-frais").innerText = state.fraisETF.toFixed(2).replace(".", ",") + " %";
+        document.getElementById("label-annees").innerText = `${state.annees} ans`;
+        document.getElementById("label-inflation-switch").innerText = `Ajusté inflation (+ ${state.inflation.toFixed(1).replace(".", ",")} %)`;
+
+        document.querySelectorAll(".slider").forEach(updateSliderBackground);
+        render();
       }
     }
 
@@ -880,6 +931,7 @@
     }
 
     function setPreset(val) {
+      state.tauxAnnuel = val;
       document.getElementById("slider-taux").value = tauxToSlider(val);
       updateState();
     }
@@ -896,12 +948,21 @@
       gradGreen.addColorStop(0, 'rgba(53, 176, 134, 0.45)');
       gradGreen.addColorStop(1, 'rgba(53, 176, 134, 0.05)');
 
-      /* Dégradé Orange sous la courbe des Frais */
       const gradOrange = ctx.createLinearGradient(0, 0, 0, 160);
-      gradOrange.addColorStop(0, 'rgba(245, 158, 11, 0.35)');
-      gradOrange.addColorStop(1, 'rgba(245, 158, 11, 0.02)');
+      gradOrange.addColorStop(0, 'rgba(245, 158, 11, 0.40)');
+      gradOrange.addColorStop(1, 'rgba(245, 158, 11, 0.03)');
 
       const datasets = [
+        { 
+          label: "Frais", 
+          data: points.map(p => p.frais), 
+          backgroundColor: gradOrange, 
+          borderColor: "#F59E0B", 
+          borderWidth: 1.5, 
+          fill: true, 
+          pointRadius: 0, 
+          tension: 0.35 
+        },
         { 
           label: "Versé", 
           data: points.map(p => p.verse), 
@@ -918,16 +979,6 @@
           backgroundColor: gradGreen, 
           borderColor: "#35b086", 
           borderWidth: 1.8, 
-          fill: true, 
-          pointRadius: 0, 
-          tension: 0.35 
-        },
-        { 
-          label: "Frais", 
-          data: points.map(p => p.frais), 
-          backgroundColor: gradOrange, 
-          borderColor: "#F59E0B", 
-          borderWidth: 1.5, 
           fill: true, 
           pointRadius: 0, 
           tension: 0.35 
